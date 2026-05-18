@@ -1,9 +1,14 @@
+import secrets
 import json
 import os
 import uuid
 from datetime import datetime, timezone
 
 DIARY_DIR = os.environ.get("OMBRE_DIARY_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "buckets", "diary_data"))
+
+
+DIARY_PASSWORD = os.environ.get("OMBRE_DIARY_PASSWORD", "")
+_diary_tokens = set()
 
 
 def _ensure_dir():
@@ -83,9 +88,27 @@ def register_routes(mcp, require_auth_fn=None):
     from starlette.responses import JSONResponse, FileResponse, Response
 
     def check_auth(request):
+        token = request.headers.get("Authorization", "").replace("Bearer ", "")
+        if token and token in _diary_tokens:
+            return None
         if require_auth_fn:
             return require_auth_fn(request)
         return None
+
+    @mcp.custom_route("/api/diary/login", methods=["POST"])
+    async def diary_login(request):
+        from starlette.responses import JSONResponse
+        try:
+            body = await request.json()
+        except Exception:
+            return JSONResponse({"error": "invalid"}, status_code=400)
+        pw = body.get("password", "")
+        if DIARY_PASSWORD and pw == DIARY_PASSWORD:
+            token = secrets.token_hex(32)
+            _diary_tokens.add(token)
+            return JSONResponse({"token": token})
+        return JSONResponse({"error": "wrong password"}, status_code=401)
+
 
     @mcp.custom_route("/api/diary", methods=["GET"])
     async def diary_list(request):
