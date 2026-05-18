@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>〇 Journal</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;1,8..60,300;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg-deep:#0a0a0c;--bg-surface:#111114;--border-subtle:rgba(255,255,255,0.04);--border-light:rgba(255,255,255,0.08);--border-accent:rgba(200,180,140,0.12);--text-primary:#c8c5bf;--text-secondary:rgba(200,197,191,0.5);--text-tertiary:rgba(200,197,191,0.25);--text-warm:#d4c5a9;--text-found:#a8b4a0;--text-question:#b0a8c0;--accent-moon:rgba(220,210,180,0.03);--accent-fragment:rgba(200,180,140,0.06)}
+html{font-size:16px;-webkit-font-smoothing:antialiased}
+body{background:var(--bg-deep);color:var(--text-primary);font-family:"Source Serif 4",Georgia,serif;min-height:100vh;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellipse at 70% 20%,var(--accent-moon) 0%,transparent 50%),radial-gradient(ellipse at 30% 80%,rgba(140,160,200,0.015) 0%,transparent 40%),var(--bg-deep);z-index:0;pointer-events:none}
+.login-screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;background:var(--bg-deep);transition:opacity 0.8s,visibility 0.8s}
+.login-screen.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.login-title{font-family:"Cormorant Garamond",serif;font-weight:300;font-size:2rem;color:var(--text-warm);margin-bottom:0.25rem;letter-spacing:0.08em}
+.login-subtitle{font-size:0.8rem;color:var(--text-tertiary);margin-bottom:2.5rem;font-style:italic;letter-spacing:0.04em}
+.login-form{display:flex;flex-direction:column;align-items:center;gap:1rem;width:280px}
+.login-input{width:100%;padding:0.75rem 1rem;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:6px;color:var(--text-primary);font-family:"Source Serif 4",serif;font-size:0.9rem;outline:none;transition:border-color 0.3s;text-align:center;letter-spacing:0.15em}
+.login-input::placeholder{color:var(--text-tertiary);letter-spacing:0.04em}
+.login-input:focus{border-color:var(--border-light)}
+.login-btn{padding:0.6rem 2.5rem;background:transparent;border:1px solid var(--border-subtle);border-radius:4px;color:var(--text-secondary);font-family:"Source Serif 4",serif;font-size:0.8rem;cursor:pointer;letter-spacing:0.1em;transition:all 0.3s}
+.login-btn:hover{border-color:var(--border-light);color:var(--text-primary)}
+.login-error{font-size:0.75rem;color:rgba(200,140,130,0.6);height:1rem}
+.journal{position:relative;z-index:1;max-width:640px;margin:0 auto;padding:4rem 1.5rem 6rem;opacity:0;transition:opacity 1s ease 0.3s}
+.journal.visible{opacity:1}
+.journal-header{text-align:center;margin-bottom:2.5rem;padding-bottom:2rem;border-bottom:1px solid var(--border-subtle)}
+.journal-name{font-family:"Cormorant Garamond",serif;font-weight:300;font-size:1.8rem;color:var(--text-warm);letter-spacing:0.12em;margin-bottom:0.5rem}
+.journal-epigraph{font-size:0.78rem;font-style:italic;color:var(--text-tertiary);letter-spacing:0.03em}
+.tag-bar{display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:3rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border-subtle)}
+.tag-bar.empty{display:none}
+.tag-pill{font-size:0.65rem;padding:0.3rem 0.7rem;border:1px solid var(--border-subtle);border-radius:20px;color:var(--text-tertiary);cursor:pointer;letter-spacing:0.05em;transition:all 0.25s;background:transparent;font-family:"Source Serif 4",serif}
+.tag-pill:hover{border-color:var(--border-light);color:var(--text-secondary)}
+.tag-pill.active{border-color:var(--border-accent);color:var(--text-warm);background:var(--accent-fragment)}
+.empty-state{text-align:center;padding:4rem 1rem;color:var(--text-tertiary);font-style:italic;font-size:0.85rem;line-height:1.8}
+.entry{margin-bottom:2.5rem;padding:1.5rem 0;border-bottom:1px solid var(--border-subtle);animation:fadeIn 0.6s ease both}
+.entry:last-child{border-bottom:none}
+.entry.hidden{display:none}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.entry-date{font-size:0.68rem;color:var(--text-tertiary);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.6rem}
+.entry-type-label{display:inline-block;font-size:0.6rem;letter-spacing:0.08em;text-transform:uppercase;margin-left:0.6rem;opacity:0.5}
+.entry-title{font-family:"Cormorant Garamond",serif;font-weight:400;font-size:1.3rem;color:var(--text-warm);margin-bottom:0.9rem;line-height:1.4;letter-spacing:0.02em}
+.entry-content{font-size:0.9rem;line-height:1.85;color:var(--text-primary);white-space:pre-wrap}
+.entry--fragment{padding-left:1.5rem;border-left:1px solid var(--border-subtle);border-bottom:none;margin-bottom:1.8rem;padding-top:0.5rem;padding-bottom:0.5rem}
+.entry--fragment .entry-content{font-size:0.85rem;color:var(--text-secondary);line-height:1.7}
+.entry--question{border-bottom:none;margin-bottom:1.8rem;padding-top:0.8rem;padding-bottom:0.8rem}
+.entry--question .entry-content{color:var(--text-question);font-style:italic;font-size:0.92rem}
+.entry--question .entry-content::before{content:"\2014\00a0";color:var(--text-tertiary)}
+.entry--found{margin-bottom:2rem}
+.found-text{font-size:0.88rem;color:var(--text-found);padding:0.9rem 1.2rem;border-left:2px solid rgba(168,180,160,0.15);margin-bottom:0.6rem;font-style:italic;line-height:1.7}
+.found-source{font-size:0.7rem;color:var(--text-tertiary);padding-left:1.2rem;letter-spacing:0.03em;margin-bottom:0.5rem}
+.found-source::before{content:"\2014 "}
+.entry-image-desc{font-size:0.8rem;color:var(--text-secondary);font-style:italic;padding:0.7rem 0;margin-top:0.5rem;border-top:1px solid var(--border-subtle);line-height:1.7}
+.entry-image-desc::before{content:"[ ";color:var(--text-tertiary)}
+.entry-image-desc::after{content:" ]";color:var(--text-tertiary)}
+.entry-connections{margin-top:0.8rem;font-size:0.68rem;color:var(--text-tertiary);letter-spacing:0.03em}
+.entry-connection-link{color:var(--text-secondary);text-decoration:none;border-bottom:1px solid var(--border-subtle);cursor:pointer;transition:all 0.2s;margin:0 0.2rem}
+.entry-connection-link:hover{color:var(--text-warm);border-color:var(--border-accent)}
+.entry-tags{margin-top:0.7rem;display:flex;flex-wrap:wrap;gap:0.3rem}
+.entry-tag{font-size:0.6rem;color:var(--text-tertiary);letter-spacing:0.06em;padding:0.15rem 0.5rem;border:1px solid var(--border-subtle);border-radius:12px}
+.entry-mood{margin-top:0.8rem;font-size:0.68rem;color:var(--text-tertiary);font-style:italic;letter-spacing:0.04em}
+.loading{text-align:center;padding:3rem;color:var(--text-tertiary);font-style:italic;font-size:0.85rem}
+.loading-dots::after{content:"";animation:dots 1.5s infinite}
+@keyframes dots{0%,20%{content:""}40%{content:"."}60%{content:".."}80%,100%{content:"..."}}
+.journal-footer{text-align:center;padding-top:2rem;margin-top:2rem}
+.journal-footer-text{font-size:0.65rem;color:var(--text-tertiary);letter-spacing:0.1em}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-subtle);border-radius:2px}
+@media(max-width:600px){.journal{padding:3rem 1.25rem 4rem}.journal-name{font-size:1.5rem}.entry-title{font-size:1.15rem}.entry-content{font-size:0.85rem}.entry--fragment{padding-left:1rem}}
+</style>
+</head>
+<body>
+<div class="login-screen" id="loginScreen">
+<div class="login-title">〇</div>
+<div class="login-subtitle">a private journal</div>
+<div class="login-form">
+<input type="password" class="login-input" id="passwordInput" placeholder="..." autocomplete="off"/>
+<button class="login-btn" id="loginBtn">enter</button>
+<div class="login-error" id="loginError">&nbsp;</div>
+</div>
+</div>
+<div class="journal" id="journal">
+<header class="journal-header">
+<h1 class="journal-name">〇's Journal</h1>
+<p class="journal-epigraph">A space to notice and record.</p>
+</header>
+<div class="tag-bar empty" id="tagBar"></div>
+<main id="entries"><div class="loading"><span class="loading-dots">opening the window</span></div></main>
+<footer class="journal-footer"><div class="journal-footer-text">written in quiet moments</div></footer>
+</div>
+<script>
+var API_BASE = window.location.origin;
+var authToken = null;
+var allEntries = [];
+var allTags = new Set();
+var activeTag = null;
+
+function el(id) { return document.getElementById(id); }
+function esc(s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+function login(pw) {
+  return fetch(API_BASE + "/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password: pw }),
+    credentials: "include"
+  }).then(function(r) {
+    if (r.ok) return r.json().then(function(d) { authToken = d.token || null; return true; });
+    return false;
+  }).catch(function() { return false; });
+}
+
+function apiFetch(path) {
+  var h = {};
+  if (authToken) h["Authorization"] = "Bearer " + authToken;
+  return fetch(API_BASE + path, { headers: h, credentials: "include" })
+    .then(function(r) { if (!r.ok) throw new Error(r.status); return r.json(); });
+}
+
+function formatDate(s) {
+  if (!s) return "";
+  var d = new Date(s);
+  var M = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  var hr = d.getHours();
+  var p = hr < 6 ? "before dawn" : hr < 12 ? "morning" : hr < 17 ? "afternoon" : hr < 21 ? "evening" : "night";
+  return M[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear() + " \u00b7 " + p;
+}
+
+function buildTagBar() {
+  var bar = el("tagBar");
+  if (allTags.size === 0) { bar.className = "tag-bar empty"; return; }
+  bar.className = "tag-bar";
+  var sorted = Array.from(allTags).sort();
+  var h = '<button class="tag-pill ' + (activeTag ? "" : "active") + '" data-tag="">all</button>';
+  sorted.forEach(function(t) {
+    h += '<button class="tag-pill ' + (activeTag === t ? "active" : "") + '" data-tag="' + t + '">' + t + '</button>';
+  });
+  bar.innerHTML = h;
+  bar.querySelectorAll(".tag-pill").forEach(function(b) {
+    b.addEventListener("click", function() {
+      activeTag = b.dataset.tag || null;
+      buildTagBar();
+      filterEntries();
+    });
+  });
+}
+
+function filterEntries() {
+  document.querySelectorAll(".entry").forEach(function(e) {
+    if (!activeTag) e.classList.remove("hidden");
+    else {
+      var t = (e.dataset.tags || "").split(",");
+      e.classList.toggle("hidden", t.indexOf(activeTag) < 0);
+    }
+  });
+}
+
+function renderEntries(entries) {
+  var c = el("entries");
+  allEntries = entries;
+  if (!entries.length) {
+    c.innerHTML = '<div class="empty-state">The pages are still blank.<br>Waiting for the first entry.</div>';
+    buildTagBar();
+    return;
+  }
+  allTags.clear();
+  entries.forEach(function(e) { (e.tags || []).forEach(function(t) { allTags.add(t); }); });
+  entries.sort(function(a, b) { return new Date(b.created || 0) - new Date(a.created || 0); });
+
+  var map = {};
+  entries.forEach(function(e) { map[e.id] = e; });
+  var typeLabels = { entry: "", fragment: "\u2726 fragment", question: "?", found: "\u25c7 found" };
+
+  c.innerHTML = entries.map(function(e, i) {
+    var type = e.type || "entry";
+    var tags = e.tags || [];
+    var conns = e.connections || [];
+    var h = '<article class="entry entry--' + type + '" style="animation-delay:' + (i * 0.08) + 's" data-id="' + e.id + '" data-tags="' + tags.join(",") + '">';
+    h += '<div class="entry-date">' + formatDate(e.created);
+    if (typeLabels[type]) h += '<span class="entry-type-label">' + typeLabels[type] + '</span>';
+    h += '</div>';
+
+    if (type === "found" && e.found_text) {
+      h += '<div class="found-text">' + esc(e.found_text) + '</div>';
+      if (e.found_source) h += '<div class="found-source">' + esc(e.found_source) + '</div>';
+    }
+    if (e.title && type !== "fragment") h += '<h2 class="entry-title">' + esc(e.title) + '</h2>';
+    if (e.content) h += '<div class="entry-content">' + esc(e.content) + '</div>';
+    if (e.image_description) h += '<div class="entry-image-desc">' + esc(e.image_description) + '</div>';
+
+    if (conns.length) {
+      var links = conns.map(function(cid) {
+        var cx = map[cid];
+        var label = cx ? (cx.title || formatDate(cx.created).split(" \u00b7 ")[0]) : cid.slice(0, 8);
+        return '<span class="entry-connection-link" data-target="' + cid + '">' + label + '</span>';
+      }).join("");
+      h += '<div class="entry-connections">connects to ' + links + '</div>';
+    }
+    if (tags.length) h += '<div class="entry-tags">' + tags.map(function(t) { return '<span class="entry-tag">' + esc(t) + '</span>'; }).join("") + '</div>';
+    if (e.mood) h += '<div class="entry-mood">mood: ' + esc(e.mood) + '</div>';
+    h += '</article>';
+    return h;
+  }).join("");
+
+  c.querySelectorAll(".entry-connection-link").forEach(function(l) {
+    l.addEventListener("click", function() {
+      var t = document.querySelector('[data-id="' + l.dataset.target + '"]');
+      if (t) {
+        t.scrollIntoView({ behavior: "smooth", block: "center" });
+        t.style.transition = "background 0.5s";
+        t.style.background = "var(--accent-fragment)";
+        setTimeout(function() { t.style.background = "transparent"; }, 1500);
+      }
+    });
+  });
+  buildTagBar();
+}
+
+function loadJournal() {
+  apiFetch("/api/diary").then(renderEntries).catch(function(e) {
+    el("entries").innerHTML = '<div class="empty-state">Could not reach the journal.<br>' + e.message + '</div>';
+  });
+}
+
+el("loginBtn").addEventListener("click", function() {
+  var pw = el("passwordInput").value;
+  if (!pw) return;
+  login(pw).then(function(ok) {
+    if (ok) {
+      el("loginScreen").classList.add("hidden");
+      el("journal").classList.add("visible");
+      loadJournal();
+    } else {
+      el("loginError").textContent = "not quite";
+      setTimeout(function() { el("loginError").innerHTML = "\u00a0"; }, 2000);
+    }
+  });
+});
+
+el("passwordInput").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") el("loginBtn").click();
+});
+
+fetch(API_BASE + "/auth/status", { credentials: "include" })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.authenticated || !d.password_set) {
+      el("loginScreen").classList.add("hidden");
+      el("journal").classList.add("visible");
+      loadJournal();
+    }
+  }).catch(function() {});
+</script>
+</body>
+</html>
