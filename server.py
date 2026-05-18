@@ -57,6 +57,7 @@ from decay_engine import DecayEngine
 from embedding_engine import EmbeddingEngine
 from import_memory import ImportEngine
 from utils import load_config, setup_logging, strip_wikilinks, count_tokens_approx
+import diary_api
 
 # --- Load config & init logging / 加载配置 & 初始化日志 ---
 config = load_config()
@@ -1905,6 +1906,13 @@ async def api_system_status(request):
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
+# Diary module (separate from memory system)
+try:
+    diary_api.register_routes(mcp, require_auth_fn=_require_auth)
+    diary_api.register_mcp_tool(mcp)
+except Exception as e:
+    logger.warning(f"Diary module failed to load: {e}")
+    
 # --- Entry point / 启动入口 ---
 if __name__ == "__main__":
     transport = config.get("transport", "stdio")
