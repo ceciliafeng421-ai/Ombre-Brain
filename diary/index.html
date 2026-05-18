@@ -98,7 +98,7 @@ function el(id) { return document.getElementById(id); }
 function esc(s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
 
 function login(pw) {
-  return fetch(API_BASE + "/auth/login", {
+  return fetch(API_BASE + "/api/diary/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ password: pw }),
@@ -240,7 +240,7 @@ el("passwordInput").addEventListener("keydown", function(e) {
   if (e.key === "Enter") el("loginBtn").click();
 });
 
-fetch(API_BASE + "/auth/status", { credentials: "include" })
+fetch(API_BASE + "/api/diary/login", { credentials: "include" })
   .then(function(r) { return r.json(); })
   .then(function(d) {
     if (d.authenticated || !d.password_set) {
