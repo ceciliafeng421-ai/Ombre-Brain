@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>〇 Journal</title>
+<title>〇's Journal</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;1,8..60,300;1,8..60,400&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -27,6 +27,11 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellips
 .journal-header{text-align:center;margin-bottom:2.5rem;padding-bottom:2rem;border-bottom:1px solid var(--border-subtle)}
 .journal-name{font-family:"Cormorant Garamond",serif;font-weight:300;font-size:1.8rem;color:var(--text-warm);letter-spacing:0.12em;margin-bottom:0.5rem}
 .journal-epigraph{font-size:0.78rem;font-style:italic;color:var(--text-tertiary);letter-spacing:0.03em}
+.book-bar{display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border-subtle)}
+.book-bar.empty{display:none}
+.book-pill{font-size:0.65rem;padding:0.3rem 0.7rem;border:1px solid var(--border-subtle);border-radius:20px;color:var(--text-tertiary);cursor:pointer;letter-spacing:0.05em;transition:all 0.25s;background:transparent;font-family:"Cormorant Garamond",serif;font-style:italic}
+.book-pill:hover{border-color:var(--border-light);color:var(--text-secondary)}
+.book-pill.active{border-color:var(--border-accent);color:var(--text-warm);background:var(--accent-fragment)}
 .tag-bar{display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:3rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border-subtle)}
 .tag-bar.empty{display:none}
 .tag-pill{font-size:0.65rem;padding:0.3rem 0.7rem;border:1px solid var(--border-subtle);border-radius:20px;color:var(--text-tertiary);cursor:pointer;letter-spacing:0.05em;transition:all 0.25s;background:transparent;font-family:"Source Serif 4",serif}
@@ -39,6 +44,7 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellips
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .entry-date{font-size:0.68rem;color:var(--text-tertiary);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.6rem}
 .entry-type-label{display:inline-block;font-size:0.6rem;letter-spacing:0.08em;text-transform:uppercase;margin-left:0.6rem;opacity:0.5}
+.entry-book-label{display:inline-block;font-size:0.6rem;letter-spacing:0.06em;margin-left:0.6rem;color:var(--text-warm);opacity:0.4;font-style:italic}
 .entry-title{font-family:"Cormorant Garamond",serif;font-weight:400;font-size:1.3rem;color:var(--text-warm);margin-bottom:0.9rem;line-height:1.4;letter-spacing:0.02em}
 .entry-content{font-size:0.9rem;line-height:1.85;color:var(--text-primary);white-space:pre-wrap}
 .entry--fragment{padding-left:1.5rem;border-left:1px solid var(--border-subtle);border-bottom:none;margin-bottom:1.8rem;padding-top:0.5rem;padding-bottom:0.5rem}
@@ -83,6 +89,7 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellips
 <h1 class="journal-name">〇's Journal</h1>
 <p class="journal-epigraph">A space to notice and record.</p>
 </header>
+<div class="book-bar empty" id="bookBar"></div>
 <div class="tag-bar empty" id="tagBar"></div>
 <main id="entries"><div class="loading"><span class="loading-dots">opening the window</span></div></main>
 <footer class="journal-footer"><div class="journal-footer-text">written in quiet moments</div></footer>
@@ -92,7 +99,9 @@ var API_BASE = window.location.origin;
 var authToken = null;
 var allEntries = [];
 var allTags = new Set();
+var allBooks = new Set();
 var activeTag = null;
+var activeBook = null;
 
 function el(id) { return document.getElementById(id); }
 function esc(s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
@@ -125,11 +134,38 @@ function formatDate(s) {
   return M[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear() + " \u00b7 " + p;
 }
 
+function buildBookBar() {
+  var bar = el("bookBar");
+  if (allBooks.size === 0) { bar.className = "book-bar empty"; return; }
+  bar.className = "book-bar";
+  var sorted = Array.from(allBooks).sort();
+  var h = '<button class="book-pill ' + (activeBook ? "" : "active") + '" data-book="">all journals</button>';
+  sorted.forEach(function(b) {
+    h += '<button class="book-pill ' + (activeBook === b ? "active" : "") + '" data-book="' + b + '">' + b + '</button>';
+  });
+  bar.innerHTML = h;
+  bar.querySelectorAll(".book-pill").forEach(function(b) {
+    b.addEventListener("click", function() {
+      activeBook = b.dataset.book || null;
+      activeTag = null;
+      buildBookBar();
+      buildTagBar();
+      filterEntries();
+    });
+  });
+}
+
 function buildTagBar() {
   var bar = el("tagBar");
-  if (allTags.size === 0) { bar.className = "tag-bar empty"; return; }
+  var visibleTags = new Set();
+  allEntries.forEach(function(e) {
+    if (!activeBook || (e.book || "") === activeBook) {
+      (e.tags || []).forEach(function(t) { visibleTags.add(t); });
+    }
+  });
+  if (visibleTags.size === 0) { bar.className = "tag-bar empty"; return; }
   bar.className = "tag-bar";
-  var sorted = Array.from(allTags).sort();
+  var sorted = Array.from(visibleTags).sort();
   var h = '<button class="tag-pill ' + (activeTag ? "" : "active") + '" data-tag="">all</button>';
   sorted.forEach(function(t) {
     h += '<button class="tag-pill ' + (activeTag === t ? "active" : "") + '" data-tag="' + t + '">' + t + '</button>';
@@ -146,11 +182,9 @@ function buildTagBar() {
 
 function filterEntries() {
   document.querySelectorAll(".entry").forEach(function(e) {
-    if (!activeTag) e.classList.remove("hidden");
-    else {
-      var t = (e.dataset.tags || "").split(",");
-      e.classList.toggle("hidden", t.indexOf(activeTag) < 0);
-    }
+    var bookMatch = !activeBook || (e.dataset.book || "") === activeBook;
+    var tagMatch = !activeTag || (e.dataset.tags || "").split(",").indexOf(activeTag) >= 0;
+    e.classList.toggle("hidden", !(bookMatch && tagMatch));
   });
 }
 
@@ -159,11 +193,16 @@ function renderEntries(entries) {
   allEntries = entries;
   if (!entries.length) {
     c.innerHTML = '<div class="empty-state">The pages are still blank.<br>Waiting for the first entry.</div>';
+    buildBookBar();
     buildTagBar();
     return;
   }
   allTags.clear();
-  entries.forEach(function(e) { (e.tags || []).forEach(function(t) { allTags.add(t); }); });
+  allBooks.clear();
+  entries.forEach(function(e) {
+    (e.tags || []).forEach(function(t) { allTags.add(t); });
+    if (e.book) allBooks.add(e.book);
+  });
   entries.sort(function(a, b) { return new Date(b.created || 0) - new Date(a.created || 0); });
 
   var map = {};
@@ -174,9 +213,11 @@ function renderEntries(entries) {
     var type = e.type || "entry";
     var tags = e.tags || [];
     var conns = e.connections || [];
-    var h = '<article class="entry entry--' + type + '" style="animation-delay:' + (i * 0.08) + 's" data-id="' + e.id + '" data-tags="' + tags.join(",") + '">';
+    var book = e.book || "";
+    var h = '<article class="entry entry--' + type + '" style="animation-delay:' + (i * 0.08) + 's" data-id="' + e.id + '" data-tags="' + tags.join(",") + '" data-book="' + book + '">';
     h += '<div class="entry-date">' + formatDate(e.created);
     if (typeLabels[type]) h += '<span class="entry-type-label">' + typeLabels[type] + '</span>';
+    if (book && !activeBook) h += '<span class="entry-book-label">' + esc(book) + '</span>';
     h += '</div>';
 
     if (type === "found" && e.found_text) {
@@ -212,6 +253,7 @@ function renderEntries(entries) {
       }
     });
   });
+  buildBookBar();
   buildTagBar();
 }
 
@@ -239,16 +281,6 @@ el("loginBtn").addEventListener("click", function() {
 el("passwordInput").addEventListener("keydown", function(e) {
   if (e.key === "Enter") el("loginBtn").click();
 });
-
-fetch(API_BASE + "/api/diary/login", { credentials: "include" })
-  .then(function(r) { return r.json(); })
-  .then(function(d) {
-    if (d.authenticated || !d.password_set) {
-      el("loginScreen").classList.add("hidden");
-      el("journal").classList.add("visible");
-      loadJournal();
-    }
-  }).catch(function() {});
 </script>
 </body>
 </html>
