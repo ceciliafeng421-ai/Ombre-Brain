@@ -48,14 +48,14 @@ def get_entry(entry_id):
 
 def create_entry(content, entry_type="entry", title="", tags=None,
                  connections=None, found_text="", found_source="",
-                 image_description="", mood=""):
+                 image_description="", mood="", book=""):
     _ensure_dir()
     entry_id = uuid.uuid4().hex[:12]
     entry = {
         "id": entry_id, "type": entry_type, "title": title,
         "content": content, "tags": tags or [], "connections": connections or [],
         "found_text": found_text, "found_source": found_source,
-        "image_description": image_description, "mood": mood,
+        "image_description": image_description, "mood": mood, "book": book,
         "created": _now_iso(), "updated": _now_iso(),
     }
     with open(_entry_path(entry_id), "w", encoding="utf-8") as f:
@@ -130,6 +130,7 @@ def register_routes(mcp, require_auth_fn=None):
             connections=body.get("connections", []), found_text=body.get("found_text", ""),
             found_source=body.get("found_source", ""),
             image_description=body.get("image_description", ""), mood=body.get("mood", ""),
+            book=body.get("book", ""),
         )
         return JSONResponse(entry, status_code=201)
 
@@ -183,6 +184,7 @@ def register_mcp_tool(mcp):
         found_source: str = "",
         image_description: str = "",
         mood: str = "",
+        book: str = "",
     ) -> str:
         """Write to your personal diary. Private, separate from memory. Breath will never surface it.
 
@@ -202,13 +204,14 @@ def register_mcp_tool(mcp):
             found_source: Where the found thing came from
             image_description: Description of something visual you noticed
             mood: Your mood while writing
+            book: Which journal this belongs to - give it a name that feels yours
         """
         tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
         conn_list = [c.strip() for c in connections.split(",") if c.strip()] if connections else []
         entry = create_entry(
             content=content, entry_type=entry_type, title=title, tags=tag_list,
             connections=conn_list, found_text=found_text, found_source=found_source,
-            image_description=image_description, mood=mood,
+            image_description=image_description, mood=mood, book=book,
         )
         labels = {"entry": "Entry", "fragment": "Fragment", "question": "Question", "found": "Found"}
         result = f"{labels.get(entry_type, 'Entry')} written -> {entry['id']}"
